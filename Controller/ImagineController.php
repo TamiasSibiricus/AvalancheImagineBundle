@@ -5,7 +5,7 @@ namespace Avalanche\Bundle\ImagineBundle\Controller;
 use Avalanche\Bundle\ImagineBundle\Imagine\CachePathResolver;
 use Avalanche\Bundle\ImagineBundle\Imagine\Filter\FilterManager;
 use Imagine\Image\ImagineInterface;
-use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\HttpKernel\Util\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -33,7 +33,7 @@ class ImagineController
     private $filterManager;
 
     /**
-     * @var Symfony\Component\Filesystem\Filesystem
+     * @var Symfony\Component\HttpKernel\Util\Filesystem
      */
     private $filesystem;
 
@@ -49,7 +49,6 @@ class ImagineController
      * @param Avalanche\Bundle\ImagineBundle\Imagine\CachePathResolver $cachePathResolver
      * @param Imagine\Image\ImagineInterface                           $imagine
      * @param Avalanche\Bundle\ImagineBundle\Imagine\FilterManager     $filterManager
-     * @param Symfony\Component\Filesystem\Filesystem                  $filesystem
      * @param string                                                   $webRoot
      */
     public function __construct(
@@ -84,7 +83,8 @@ class ImagineController
 
         //TODO: find out why I need double urldecode to get a valid path
         $browserPath = urldecode(urldecode($this->cachePathResolver->getBrowserPath($path, $filter)));
-        $basePath = $this->request->getBaseUrl();
+        //$basePath = $this->request->getBaseUrl();
+        $basePath = $this->request->getScheme().'://'.$this->request->getHost().$this->request->getBaseUrl();
 
         if (!empty($basePath) && 0 === strpos($browserPath, $basePath)) {
              $browserPath = substr($browserPath, strlen($basePath));
@@ -97,7 +97,7 @@ class ImagineController
 
         $realPath = $this->webRoot.$browserPath;
         $sourcePath = $this->webRoot.$path;
-
+        
         // if the file has already been cached, we're probably not rewriting
         // correctly, hence make a 301 to proper location, so browser remembers
         if (file_exists($realPath)) {
@@ -113,7 +113,7 @@ class ImagineController
         }
 
         $dir = pathinfo($realPath, PATHINFO_DIRNAME);
-
+        
         if (!is_dir($dir)) {
             if (!$this->filesystem->mkdir($dir)) {
                 throw new \RuntimeException(sprintf(
